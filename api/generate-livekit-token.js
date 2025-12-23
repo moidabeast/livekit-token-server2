@@ -12,24 +12,26 @@ export default function handler(req, res) {
     return res.status(400).json({ error: "Missing parameters" });
   }
 
-  // --- LiveKit API credentials ---
+  // --- LiveKit credentials ---
   const apiKey = "APIcZDwSz4aoyDN";
   const apiSecret = "9Ogsq1pmPX5ry8Gn18xe8hUCQjErV0JqfeKp6OR60YmA";
 
-  // --- JWT payload with video grants ---
+  // --- Correct LiveKit JWT payload with grants wrapper ---
   const payload = {
     iss: apiKey,
     sub: apiKey,
     aud: "livekit",
-    exp: Math.floor(Date.now() / 1000) + 60 * 60, // expires in 1 hour
-    video: {
-      roomJoin: true,
-      room: roomId,
-      canPublish: role === "broadcaster",  // only allow publishing if host
-      canSubscribe: true
-    },
-    metadata: { role },
-    participant_identity: userId
+    exp: Math.floor(Date.now() / 1000) + 60 * 60,
+    grants: {
+      video: {
+        roomJoin: true,
+        room: roomId,
+        canPublish: role === "broadcaster",  // true for host
+        canSubscribe: true
+      },
+      metadata: { role },
+      participant_identity: userId
+    }
   };
 
   // --- Sign and return the token ---
