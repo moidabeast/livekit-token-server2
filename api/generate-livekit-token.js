@@ -1,6 +1,6 @@
-import jwt from "jsonwebtoken";
+import { AccessToken } from "livekit-server-sdk";
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   // --- CORS headers ---
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -12,34 +12,25 @@ export default function handler(req, res) {
     return res.status(400).json({ error: "Missing parameters" });
   }
 
-  // --- LiveKit credentials ---
-  const apiKey = "APIcZDwSz4aoyDN";
-  const apiSecret = "9Ogsq1pmPX5ry8Gn18xe8hUCQjErV0JqfeKp6OR60YmA";
+  // --- LiveKit credentials (use env vars in production!) ---
+  const apiKey = process.env.LIVEKIT_API_KEY || "APIcZDwSz4aoyDN";
+  const apiSecret = process.env.LIVEKIT_API_SECRET || "9Ogsq1pmPX5ry8Gn18xe8hUCQjErV0JqfeKp6OR60YmA";
 
-  // --- Correct LiveKit Cloud JWT payload ---
-  const payload = {
-    iss: apiKey,
-    sub: apiKey,
-    aud: "livekit", // required for LiveKit Cloud
-    exp: Math.floor(Date.now() / 1000) + 60 * 60,
-    grants: {
-      roomJoin: true,
-      roomCreate: role === "broadcaster",
-      room: roomId,
-      video: {
-        roomJoin: true,
-        room: roomId,
-        canPublish: role === "broadcaster",
-        canSubscribe: true,
-        canPublishData: true
-      },
-      canPublishData: true,
-      metadata: JSON.stringify({ role }),
-      participant_identity: userId
-    }
-  };
+  // --- Create token ---
+  const at = new AccessToken(apiKey, apiSecret, {
+    identity: userId,              // participant's identity (sub claim)
+    ttl: "1h",                     // token valid for 1 hour
+    metadata: JSON.stringify({ role }),  // optional metadata
+  });
 
-  // --- Sign and return token ---
-  const token = jwt.sign(payload, apiSecret, { algorithm: "HS256" });
+  at.addGrant({
+    roomJoin: true,
+    room: roomId,
+    canPublish: role === "broadcaster",
+    canSubscribe: true,
+  });
+
+  const token = await at.toJwt();
+
   res.status(200).json({ token });
 }
