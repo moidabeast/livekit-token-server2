@@ -1,24 +1,35 @@
+import jwt from "jsonwebtoken";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = "APIcZDwSz4aoyDN";
-  const apiSecret = "9Ogsq1pmPX5ry8Gn18xe8hUCQjErV0JqfeKp6OR60YmA";
   const { roomName } = req.body || {};
-
   if (!roomName) {
     return res.status(400).json({ error: "Missing roomName" });
   }
 
+  const apiKey = "APIcZDwSz4aoyDN";
+  const apiSecret = "9Ogsq1pmPX5ry8Gn18xe8hUCQjErV0JqfeKp6OR60YmA";
+
+  // Create REST JWT
+  const token = jwt.sign(
+    {
+      iss: apiKey,
+      exp: Math.floor(Date.now() / 1000) + 60, // 1 minute is fine
+      video: { roomCreate: true },
+    },
+    apiSecret,
+    { algorithm: "HS256" }
+  );
+
   const response = await fetch(
-    "https://sparr-4z7yxmt4.livekit.cloud/twirp/livekit.RoomService/CreateRoom",
+    "https://sparr-4z7yxmt4.livekit.cloud/rooms",
     {
       method: "POST",
       headers: {
-        Authorization: `Basic ${Buffer.from(
-          `${apiKey}:${apiSecret}`
-        ).toString("base64")}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -30,10 +41,9 @@ export default async function handler(req, res) {
 
   const text = await response.text();
 
-  // Handle non-JSON errors safely
+  // LiveKit sometimes returns non-JSON on errors
   try {
-    const data = JSON.parse(text);
-    res.status(response.status).json(data);
+    res.status(response.status).json(JSON.parse(text));
   } catch {
     res.status(response.status).send(text);
   }
