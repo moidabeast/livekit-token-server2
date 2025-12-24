@@ -16,26 +16,27 @@ export default function handler(req, res) {
   const apiKey = "APIcZDwSz4aoyDN";
   const apiSecret = "9Ogsq1pmPX5ry8Gn18xe8hUCQjErV0JqfeKp6OR60YmA";
 
-  // --- Correct LiveKit JWT payload structure ---
+  // --- Correct LiveKit Cloud JWT payload ---
   const payload = {
     iss: apiKey,
     sub: apiKey,
-    aud: "livekit",
+    aud: "api", // required for LiveKit Cloud
     exp: Math.floor(Date.now() / 1000) + 60 * 60,
     grants: {
+      roomJoin: true,
+      room: roomId,
       video: {
         roomJoin: true,
         room: roomId,
         canPublish: role === "broadcaster",
         canSubscribe: true
       },
-      room: roomId,
       metadata: JSON.stringify({ role }),
       participant_identity: userId
     }
   };
 
-  // --- Sign and return the token ---
+  // --- Sign and return token ---
   const token = jwt.sign(payload, apiSecret, { algorithm: "HS256" });
   res.status(200).json({ token });
 }
