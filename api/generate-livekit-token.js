@@ -16,7 +16,7 @@ export default function handler(req, res) {
   const apiKey = "APIcZDwSz4aoyDN";
   const apiSecret = "9Ogsq1pmPX5ry8Gn18xe8hUCQjErV0JqfeKp6OR60YmA";
 
-  // --- Correct LiveKit JWT payload with grants wrapper ---
+  // --- Correct LiveKit JWT payload structure ---
   const payload = {
     iss: apiKey,
     sub: apiKey,
@@ -26,10 +26,11 @@ export default function handler(req, res) {
       video: {
         roomJoin: true,
         room: roomId,
-        canPublish: role === "broadcaster",  // true for host
+        canPublish: role === "broadcaster",
         canSubscribe: true
       },
-      metadata: { role },
+      room: roomId,
+      metadata: JSON.stringify({ role }),
       participant_identity: userId
     }
   };
