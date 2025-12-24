@@ -1,13 +1,22 @@
+import jwt from "jsonwebtoken";
+
 export default async function handler(req, res) {
   const apiKey = "APIcZDwSz4aoyDN";
   const apiSecret = "9Ogsq1pmPX5ry8Gn18xe8hUCQjErV0JqfeKp6OR60YmA";
   const { roomName } = req.body;
 
   try {
+    // 1️⃣ Generate a REST API token
+    const token = jwt.sign({}, apiSecret, {
+      expiresIn: "1h",
+      issuer: apiKey,
+    });
+
+    // 2️⃣ Use token to call LiveKit REST API
     const response = await fetch("https://sparr-4z7yxmt4.livekit.cloud/rooms", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}:${apiSecret}`, // must be Bearer, not Basic
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -17,13 +26,9 @@ export default async function handler(req, res) {
     });
 
     const contentType = response.headers.get("content-type") || "";
-    let data;
-
-    if (contentType.includes("application/json")) {
-      data = await response.json();
-    } else {
-      data = await response.text(); // fallback to plain text
-    }
+    const data = contentType.includes("application/json") 
+      ? await response.json() 
+      : await response.text();
 
     res.status(response.status).json({ data });
   } catch (err) {
