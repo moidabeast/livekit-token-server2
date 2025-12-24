@@ -20,17 +20,20 @@ export default function handler(req, res) {
   const payload = {
     iss: apiKey,
     sub: apiKey,
-    aud: "api", // required for LiveKit Cloud
+    aud: "livekit", // required for LiveKit Cloud
     exp: Math.floor(Date.now() / 1000) + 60 * 60,
     grants: {
       roomJoin: true,
+      roomCreate: role === "broadcaster",
       room: roomId,
       video: {
         roomJoin: true,
         room: roomId,
         canPublish: role === "broadcaster",
-        canSubscribe: true
+        canSubscribe: true,
+        canPublishData: true
       },
+      canPublishData: true,
       metadata: JSON.stringify({ role }),
       participant_identity: userId
     }
