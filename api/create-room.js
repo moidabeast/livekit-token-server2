@@ -3,20 +3,30 @@ export default async function handler(req, res) {
   const apiSecret = "9Ogsq1pmPX5ry8Gn18xe8hUCQjErV0JqfeKp6OR60YmA";
   const { roomName } = req.body;
 
-  const response = await fetch("https://sparr-4z7yxmt4.livekit.cloud/rooms", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${Buffer.from(`${apiKey}:${apiSecret}`).toString("base64")}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      name: roomName,
-      empty_timeout: 300,
-    }),
-  });
+  try {
+    const response = await fetch("https://sparr-4z7yxmt4.livekit.cloud/rooms", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}:${apiSecret}`, // must be Bearer, not Basic
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: roomName,
+        empty_timeout: 300,
+      }),
+    });
 
-  const data = await response.json();
-  
-  console.log("LiveKit JSON response:", data); // <- log here
-  res.status(response.status).json(data);        // <- return full JSON
+    const contentType = response.headers.get("content-type") || "";
+    let data;
+
+    if (contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      data = await response.text(); // fallback to plain text
+    }
+
+    res.status(response.status).json({ data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 }
